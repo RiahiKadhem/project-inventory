@@ -1,0 +1,291 @@
+#include "Partie.h"
+#include "Vaisseau.h"
+#include "Extraterrestre.h"
+#include "Laser.h"
+#include "Martien.h"
+#include "UIKit.h"
+#include <iostream>
+#include <conio.h>
+#include<Windows.h>
+
+
+void Partie::debuter()
+{
+	system("cls");
+	UIKit::curseurVisible(false);
+	UIKit::setDimensionFenetre(0, 0, 70, 30);
+	UIKit::cadre(9, 2, 51, 25, 10);
+	UIKit::color(12);
+	bool partieTermine = false;
+	
+	//Faire apparaitre le vaisseau
+	Coord coordonneesDepartVaisseau(30, 21);
+	Coord limiteMouvementGauche(10, 20);
+	Coord limiteMouvementDroite(50, 20);
+	char apparenceDuVaisseau = 'A';
+	Vaisseau vaisseau(apparenceDuVaisseau, coordonneesDepartVaisseau, limiteMouvementGauche, limiteMouvementDroite);
+
+	//test timer dinamic
+	int cmp = 0; // valeur qui va centenir le compteur apres la fin d'un niveau
+	double myTimer = 100; // timer du sleep en ms
+	int sortieDeBoucle = 0; //la valeur qui va permetre de sortir de la boucle et finir le jeu
+
+    //creer une variable score
+	int score = 0; //le score du joueur
+	int timer = 0; //Timer p/s
+	int cpt = 0;
+
+	/*Creer un tableau de martiens avec leur coord*/
+	const int nbrMartiens = 10;
+	Martien *myTabMartien[nbrMartiens];
+	int tempX = 10;
+	int tempY = 10;
+	for (int i = 0; i < 10; i++)
+	{
+		Coord maCoord(tempX, tempY);
+		myTabMartien[i] = new Martien(Coord(rand() % 35 + 11, rand() % 12 + 3), 'W', 100);
+		tempX = tempX + 4;
+	}
+	/*creer un tableau dynamic de lazer*/
+	const int tabLaserSize = 40;
+	int cmpLaser = 0;
+	Laser *myTabLaser[tabLaserSize];
+
+	const int tabLaserMartienSize = 50;
+	int cmpLaserMartiens=0;
+	Laser *myTabLaserMartien[tabLaserMartienSize];
+
+	/*inicialiser le tableau de laser et initialiser la valeur actif a false*/
+	for (int i = 0; i < tabLaserSize; i++)
+	{
+		myTabLaser[i] = new Laser(vaisseau.getCoord(), TypeLaser::JOUEUR);
+		myTabLaser[i]->detruire();
+	}
+	
+	for (int i = 0; i < tabLaserMartienSize; i++)
+	{
+		myTabLaserMartien[i] = new Laser(vaisseau.getCoord(), TypeLaser::EXTRATERRESTRE);
+		myTabLaserMartien[i]->detruire();
+	}
+	int nbVie = 3; //nombre de vie du joueur
+	
+	do {
+		
+		//Récupérer la touche appuyée par l'utilisateur
+		if (GetAsyncKeyState(VK_SPACE))
+		{
+			delete myTabLaser[cmpLaser];
+			myTabLaser[cmpLaser] = new Laser(vaisseau.getCoord(), TypeLaser::JOUEUR);
+			cmpLaser++;
+		}
+
+		for (int i = 0; i < tabLaserSize; i++)
+		{
+			if (myTabLaser[i]->getCoord().getY() == 3)
+			{
+				UIKit::gotoXY(myTabLaser[i]->getCoord().getX(), myTabLaser[i]->getCoord().getY());
+				std::cout << " ";
+			}
+			if (myTabLaser[i]->isActif() == true && myTabLaser[i]->getCoord().getY() > 3)
+			{
+				myTabLaser[i]->deplacer();
+			}	
+		}
+		if (cmpLaser == tabLaserSize - 1)
+		{
+			cmpLaser = 0;
+		}
+		/*if (GetAsyncKeyState(VK_SPACE))
+		{
+			myTabLazer[cmpLaser] = new Laser(vaisseau.getCoord(), TypeLaser::JOUEUR);
+			if (cmpLaser < 16)
+			{
+				cmpLaser++;
+			}	
+		}
+		for (int i = 0; i < cmpLaser; i++)
+		{
+			if (myTabLazer[i]->getCoord().getY() == 3)
+			{
+				UIKit::gotoXY(myTabLazer[i]->getCoord().getX(), myTabLazer[i]->getCoord().getY());
+				std::cout << " ";
+				//myTabLazer[i]->effacer();
+				delete myTabLazer[i];
+				for (size_t j = i; j < cmpLaser - i - 1; j++)
+				{
+					myTabLazer[i] = myTabLazer[i+1];
+				}
+				cmpLaser--;
+			}
+		}
+		for (int i = 0; i < cmpLaser; i++)
+		{
+			if (myTabLazer[i]->getCoord().getY() > 3)
+			{
+				//myTabLazer[i]->afficher();
+				myTabLazer[i]->deplacer();
+			}
+		}*/
+		//Effectuer action en fonction de la touche appuyé par l'utilisateur
+		//Ici on peut soit déplacer le vaiseau à gauche ou à droite, soit tirer un laser
+		if (GetAsyncKeyState(VK_LEFT)) {
+			vaisseau.deplacer(Direction::GAUCHE);
+		}
+		else if (GetAsyncKeyState(VK_RIGHT)) {
+			vaisseau.deplacer(Direction::DROITE);
+		}
+		
+		//Déplacer les lasers du vaisseau et des extraterrestres		
+
+		//Déplacer les extraterrestres		
+
+		for (int i = 0; i < 10; i++)
+		{
+			if (myTabMartien[i]->isActif() == true)
+			{
+				myTabMartien[i]->deplacer();
+			}
+		}
+
+		//Faire tirer les extraterrestres
+		
+		int valeurRandom = rand() % 10;				//choisir un numéro aléatoire entre 0 et 10(martiens)
+		int posMartienHasard =-1;					
+		if (myTabMartien[valeurRandom]->isActif()) {	//le martien doit être actif pour tirer sinn on recommence 
+			posMartienHasard = valeurRandom;
+	
+			Coord coordMartienHazard(myTabMartien[posMartienHasard]->getCoord().getX(), myTabMartien[posMartienHasard]->getCoord().getY());
+			delete myTabLaserMartien[cmpLaserMartiens];
+			myTabLaserMartien[cmpLaserMartiens] = new Laser(coordMartienHazard, TypeLaser::EXTRATERRESTRE);
+			cmpLaserMartiens++;
+
+		}
+			
+			for (int i = 0; i < tabLaserMartienSize - 1; i++)
+			{
+				if (myTabLaserMartien[i]->isActif() == true && myTabLaserMartien[i]->getCoord().getY() < 22 )
+				{
+					myTabLaserMartien[i]->deplacer();
+				}			
+			}
+			Coord macoorDeTest(0,22);
+			UIKit::gotoXY(macoorDeTest.getX(), macoorDeTest.getY());
+			cout << "K";
+		
+		if (cmpLaserMartiens == tabLaserMartienSize - 1)
+		{
+			cmpLaserMartiens = 0;
+		}
+
+
+		//Vérifier collision entre laser et joueur ou ennemis
+		for (int  i = 0; i < tabLaserSize; i++)
+		{
+			for (int j = 0; j < nbrMartiens; j++)
+			{
+				if (myTabLaser[i]->getCoord().getY() == myTabMartien[j]->getCoord().getY() && myTabLaser[i]->getCoord().getX() == myTabMartien[j]->getCoord().getX() && myTabLaser[i]->isActif() == true && myTabMartien[j]->isActif() == true)
+				{
+					score += myTabMartien[j]->getValeurPoints();
+					myTabLaser[i]->detruire();
+					myTabMartien[j]->detruire();
+				}
+			}
+		}
+
+		/*for (int i = 0; i < cmpLaser; i++) {
+			for (int j = 0; j < 10; j++) {
+				if (myTabLazer[i]->detecterCollision(*myTabMartien[j])) {
+					//myTabMartien[j]->detruire();
+					myTabMartien[j] = myTabMartien[j + 1];
+					//myTabLazer[i]->detruire();
+					UIKit::gotoXY(myTabLazer[i]->getCoord().getX(), myTabLazer[i]->getCoord().getY());
+					std::cout << " ";
+					//delete myTabLazer[i];
+					for (size_t j = i; j < cmpLaser - i - 1; j++)
+					{
+						myTabLazer[i] = myTabLazer[i + 1];
+					}
+					cmpLaser--;
+				}
+			}
+		}*/
+
+		//Faire apparaitre nouveau extraterrestre
+		
+		//Mettre à jour le score affiché	
+	
+			UIKit::gotoXY(9, 1);
+			std::cout << " Score : " << score << std::endl;
+		
+		
+
+		//Vérifier si on gagne (si le nombre d'extraterrestre est rendu à 0)		
+
+		//Vérifier si on perd si le nombre d'extra terrestre est à 15+ ou 
+		//qu'un laser extraterrestre nous a atteint
+			
+			for (int i = 0; i < tabLaserMartienSize; i++)
+			{
+
+				if (myTabLaserMartien[i]->getCoord().getY() == vaisseau.getCoord().getY() && myTabLaserMartien[i]->getCoord().getX() == vaisseau.getCoord().getX() && myTabLaserMartien[i]->isActif() == true )
+				{
+					nbVie--;
+				}
+			}
+<<<<<<< HEAD
+			if (nbVie == 0)
+			{
+				break;
+			}
+=======
+
+		// Timer
+			if (cpt % 10 == 0) {
+				timer++;
+				UIKit::gotoXY(20, 1);
+				cout << "               " << "Temp de jeu:" << timer << " " << endl;
+		}
+			
+>>>>>>> 757587c8f161dce888dcb756f52b8e2bf222c7ef
+
+
+
+		//test difficulté
+		int testSiActif = 0;
+		for (int i = 0; i < nbrMartiens; i++)
+		{
+			if (myTabMartien[i]->isActif() == true) 
+			{
+				testSiActif++;
+			}
+		}
+		UIKit::gotoXY(0, 0);
+		std::cout << nbVie;
+		if (testSiActif == 0)
+		{
+			sortieDeBoucle++;
+			int valTempCoordX = 12;
+			int valTempCoordY = 10;
+			myTimer -= 20;
+			for (int i = 0; i < nbrMartiens; i++)
+			{
+				Coord maCoord(valTempCoordX, valTempCoordY);
+				delete myTabMartien[i];  
+				myTabMartien[i] = new Martien(Coord(rand() % 35 + 11, rand() % 12 + 3), 'W', 100);
+				valTempCoordX = valTempCoordX + 4;
+			}
+		}
+		if (sortieDeBoucle == 3)
+		{
+			break;
+		}
+
+		UIKit::gotoXY(vaisseau.getCoord().getX(), vaisseau.getCoord().getY());
+		cout << "A";	
+		
+		Sleep(myTimer);
+	} while (partieTermine == false);
+	system("cls");
+	
+
+}
